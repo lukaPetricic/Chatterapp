@@ -14,8 +14,8 @@ function App() {
     const [chattingWith, setChattingWith] = useState('');
     const [currentMessages, setCurrentMessages] = useState([]);
     const latestChattingWith = useRef(chattingWith);
-
     function login() {
+        socket.disconnect();
         socket.connect();
         socket.on('connect', () => {
             socket.emit('new user', { username, id: socket.id })

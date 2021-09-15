@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import TimeAgo from 'react-timeago';
 
 function Chat({ activeUsers, username, chattingWith, changeChat, currentMessages, sendMessage }) {
     return (
         <div id="chatpage">
-            <h1>Main chat page</h1>
+            <h1>Chatterapp</h1>
             <ActiveUsersList activeUsers={activeUsers} changeChat={changeChat} username={username} />
             <ChatBox
                 activeUsers={activeUsers}
@@ -25,8 +26,9 @@ function ActiveUsersList({ activeUsers, changeChat, username }) {
 
     return (
         <div id="activeUsersList">
-            {filteredActiveUsers.map((user, i) => 
-            <div onClick={() => handleClick(user)} key={i}>{user.username}{user.unseen ? '+1!' : null}</div>)}
+            <h2>Users online:</h2>
+            {filteredActiveUsers.map((user, i) =>
+                <div onClick={() => handleClick(user)} key={i}>{user.username}{user.unseen ? <img src="https://img.icons8.com/material-sharp/17/000000/bell.png"/> : null}</div>)}
         </div>
     )
 }
@@ -45,25 +47,30 @@ function ChatBox({ activeUsers, username, chattingWith, currentMessages, sendMes
         e.target.reset();
         setCurrentMessage('')
     }
-    return (
-        <div id="chatWindow">
-            <MessageDisplay currentConversation={currentMessages} username={username}/>
-            <form onSubmit={handleSubmit}>
-                <input type="text" placeholder={"Message to " + chattingWith} onChange={(e) => setCurrentMessage(e.target.value)}></input>
-                <input type="submit" value="Send"></input>
-            </form>
-        </div>
-    )
+
+    if (chattingWith) {
+        return (
+            <div id="chatWindow">
+                <MessageDisplay currentConversation={currentMessages} username={username} />
+                <form onSubmit={handleSubmit}>
+                    <input id="messageTextbox" type="text" placeholder={"Message to " + chattingWith} onChange={(e) => setCurrentMessage(e.target.value)}></input>
+                    <input id="sendMessage" type="submit" value="Send"></input>
+                </form>
+            </div>
+        )
+    }
+
+    return <div id="emptyChatWindow"><p>Choose someone to chat with</p></div>
 }
 
 function MessageDisplay({ currentConversation, username }) {
     return (
         <div id="messageDisplay">
             {currentConversation.map((message, i) =>
-                <div key={i}>
-                    <div>{message.sender === username ? 'You' : message.sender}</div>
-                    <div>{message.timestamp.toString()}</div>
-                    <div>{message.body}</div>
+                <div className="message" key={i}>
+                    <div className="sender">{message.sender === username ? 'You' : message.sender}</div>
+                    <TimeAgo className="timestamp" date={message.timestamp} minPeriod={15}/>
+                    <div className="messageBody">{message.body}</div>
                 </div>
             )}
         </div>

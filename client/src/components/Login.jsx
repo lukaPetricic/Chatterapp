@@ -1,18 +1,32 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Redirect } from 'react-router-dom';
 
-function Login({username, setUsername, login}) {
-    
+function Login({ username, setUsername, login }) {
+    const [authorized, setAuthorized] = useState(false)
+    function handleLogin(e) {
+        e.preventDefault();
+        fetch('./isUsernameTaken/' + username)
+            .then(response => response.json())
+            .then(isTaken => {
+                if (isTaken) {
+                    alert('Think of something more original')
+                } else {
+                    setAuthorized(true)
+                    login();
+                }
+            });
+    }
+
     return (
-        <>
-            <h1>Login page</h1>
-            <form>
-                <input type="text" onChange={e => setUsername(e.target.value)}/>
-                <Link to={'/chat'}>
-                    <button onClick={() => login()}>Submit</button>
-                </Link>
-            </form>
-        </>
+            <div id="login">
+                <h2>Choose a nickname</h2>
+                <p>(be original)</p>
+                <form>
+                    <input type="text" onChange={e => setUsername(e.target.value)} />
+                    <button onClick={(e) => handleLogin(e)}>Submit</button>
+                </form>
+                {authorized ? <Redirect to={'/chat'} /> : null}
+            </div>
     )
 }
 

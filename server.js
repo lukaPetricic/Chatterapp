@@ -15,15 +15,23 @@ app.get('/chat', (req, res) => {
 app.get('/activeUsers', (req, res) => {
     let formattedUsers = [];
     for (let id in activeUsers) {
-        formattedUsers.push({id, username: activeUsers[id], messages: [], unseen: false})
+        formattedUsers.push({ id, username: activeUsers[id], messages: [], unseen: false })
     }
     res.send(formattedUsers);
+})
+
+app.get('/isUsernameTaken/:username', (req, res) => {
+    if (Object.values(activeUsers).includes(req.params.username)) {
+        res.send(true)
+    } else {
+        res.send(false)
+    }
 })
 
 io.on('connection', (socket) => {
     console.log('a user connected');
     socket.on('new user', (newUser) => {
-        let formatedUser = {...newUser, messages: [], unseen: false}
+        let formatedUser = { ...newUser, messages: [], unseen: false }
         activeUsers[socket.id] = newUser.username;
         socket.broadcast.emit("new user", formatedUser);
 
