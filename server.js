@@ -13,20 +13,19 @@ app.get('/chat', (req, res) => {
     res.redirect('/');
 })
 app.get('/activeUsers', (req, res) => {
-    console.log('serving activeUsers');
     let formattedUsers = [];
     for (let id in activeUsers) {
-        formattedUsers.push({id, username: activeUsers[id]})
+        formattedUsers.push({id, username: activeUsers[id], messages: [], unseen: false})
     }
-    console.log(formattedUsers)
     res.send(formattedUsers);
 })
 
 io.on('connection', (socket) => {
     console.log('a user connected');
     socket.on('new user', (newUser) => {
+        let formatedUser = {...newUser, messages: [], unseen: false}
         activeUsers[socket.id] = newUser.username;
-        socket.broadcast.emit("new user", newUser);
+        socket.broadcast.emit("new user", formatedUser);
 
     })
     socket.on('disconnect', () => {
@@ -34,6 +33,11 @@ io.on('connection', (socket) => {
         delete activeUsers[socket.id];
         socket.broadcast.emit("user left", socket.id);
     });
+    socket.on('new message', (message, receiverId) => {
+        console.log(receiverId)
+        io.to(receiverId).emit('new message', message);
+    })
+
 });
 
 server.listen(3000, () => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Route } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Login from './Login.jsx';
@@ -11,6 +11,9 @@ function App() {
     const [username, setUsername] = useState('');
     const [logged, setLogged] = useState(false);
     const [activeUsers, setActiveUsers] = useState([]);
+    const [chattingWith, setChattingWith] = useState('');
+    const [currentMessages, setCurrentMessages] = useState([]);
+    const latestChattingWith = useRef(chattingWith);
 
     function login() {
         socket.connect();
@@ -25,13 +28,62 @@ function App() {
         socket.on('user left', (userLeftId) => {
             setActiveUsers(activeUsers => activeUsers.filter(user => user.id !== userLeftId))
         })
+        socket.on('new message', (message) => {
+            setActiveUsers(activeUsers => activeUsers.map(user => {
+                if (user.username === message.sender) {
+                    return {
+                        ...user,
+                        messages: [...user.messages, message],
+                        unseen: message.sender === latestChattingWith.current ? false : true
+                    }
+                }
+                return user;
+            }))
+            
+            if (message.sender === latestChattingWith.current) {
+                setCurrentMessages(currentMessages => [...currentMessages, message])
+            }
+        })
+    }
+
+    function changeChat(user) {
+        setChattingWith(() => {
+            latestChattingWith.current = user.username
+            return user.username
+        });
+        setCurrentMessages(user.messages);
+        setActiveUsers(activeUsers => activeUsers.map(listed => {
+            if (listed.username === user.username) {
+                return {
+                    ...user,
+                    unseen: false
+                }
+            }
+            return listed;
+        }))
+    }
+
+    function sendMessage(message, receiver) {
+        setCurrentMessages(currentMessages => [...currentMessages, message]);
+        let receiverId = activeUsers.find(user => user.username === receiver).id;
+        socket.emit('new message', message, receiverId);
+
+        setActiveUsers(activeUsers => activeUsers.map(user => {
+            if (user.username === receiver) {
+                return {
+                    ...user,
+                    messages: [...user.messages, message]
+                }
+            }
+            return user;
+        }))
     }
 
     useEffect(() => {
         if (logged) {
-        fetch('/activeUsers')
-            .then(response => response.json())
-            .then(data => setActiveUsers(data));
+            fetch('/activeUsers')
+                .then(response => response.json())
+                .then(data => setActiveUsers(data));
         }
     }, [logged])
 
@@ -41,7 +93,16 @@ function App() {
             <Route exact path="/">
                 <Login username={username} setUsername={setUsername} login={login} />
             </Route>
-            <Route path="/chat" component={Chat} />
+            <Route path="/chat">
+                <Chat
+                    activeUsers={activeUsers}
+                    username={username}
+                    chattingWith={chattingWith}
+                    changeChat={changeChat}
+                    currentMessages={currentMessages}
+                    sendMessage={sendMessage}
+                />
+            </Route>
         </Router>
     )
 }
